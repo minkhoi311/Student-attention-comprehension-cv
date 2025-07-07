@@ -36,8 +36,6 @@ validation_generator  = validation_datagen.flow_from_directory(
     class_mode='categorical',
     shuffle=True)
 
-
-
 class_labels = ['Angry', 'Disgust', 'Fear','Happy', 'Neutral','Sad','Suprise']
 
 # img , label = train_generator.__next__()
@@ -65,7 +63,7 @@ model.add(Dense(512,activation='relu'))
 model.add(Dropout(0.2))
 
 
-model.add(Dense(7,activation='softmax'))   #  since it is a categorical   we are using softmazx, we use the sigmoifd for the binary   classification 
+model.add(Dense(7,activation='softmax'))
 
 model.compile(loss='categorical_crossentropy',optimizer='adam', metrics=['accuracy'])
 
@@ -86,8 +84,8 @@ for root ,dirs, files in os.walk(test_path):
     num_test_imgs +=len(files)   #counting the number of the images 
 
 
-print(num_test_imgs)    #Number of the test images
-print(num_train_imgs)    #Number od the train images 
+print(num_test_imgs)
+print(num_train_imgs)
 
 epochs = 30 
 history = model.fit(
@@ -96,9 +94,6 @@ history = model.fit(
                     epochs = epochs, 
                     validation_data=validation_generator,
                     validation_steps=num_test_imgs//32)
-
-
-
 
 model.save('model_file.h5')
 # Plot the loss and accuracy curves for training and validation
