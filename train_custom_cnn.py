@@ -155,4 +155,38 @@ plt.tight_layout()
 plt.savefig('result_ccnn/confusion_matrix.png', dpi=300, bbox_inches='tight')
 plt.close()
 
+# ---- VẼ TRAINING HISTORY ----
+def plot_training_history(history):
+    acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+    epochs_range = range(1, len(acc) + 1)
+
+    plt.figure(figsize=(12, 5))
+
+    # Accuracy
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs_range, acc, label='Train Accuracy')
+    plt.plot(epochs_range, val_acc, label='Val Accuracy')
+    plt.title('Training and Validation Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+
+    # Loss
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs_range, loss, label='Train Loss')
+    plt.plot(epochs_range, val_loss, label='Val Loss')
+    plt.title('Training and Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.tight_layout()
+    plt.savefig('result_ccnn/training_history.png', dpi=300)
+    plt.show()
+
+plot_training_history(history)
+
 print("Confusion matrix và báo cáo phân loại đã được lưu trong thư mục 'result_ccnn/'.")
