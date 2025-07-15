@@ -1,4 +1,3 @@
-# --- File 1: train_custom_cnn.py ---
 import numpy as np
 from sklearn.utils import class_weight
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -6,7 +5,6 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras import layers, regularizers
 from tensorflow.keras import models
 from tensorflow.keras.optimizers import Adam
-import tensorflow as tf
 from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -116,13 +114,8 @@ print("\n=== ĐÁNH GIÁ MÔ HÌNH TRÊN TẬP VALIDATION ===")
 # Tạo thư mục lưu kết quả nếu chưa có
 os.makedirs('result_ccnn', exist_ok=True)
 
-# Tải lại mô hình tốt nhất (nếu có)
-if os.path.exists('result_ccnn/best_model.h5'):
-    best_model = tf.keras.models.load_model('result_ccnn/best_model.h5')
-    print("Sử dụng mô hình tốt nhất từ checkpoint: result_ccnn/best_model.h5")
-else:
-    best_model = model
-    print("Không tìm thấy mô hình tốt nhất → dùng mô hình cuối cùng vừa huấn luyện")
+best_model = model
+print("Dùng mô hình cuối cùng vừa huấn luyện để đánh giá.")
 
 # Reset generator và dự đoán
 val_gen.reset()

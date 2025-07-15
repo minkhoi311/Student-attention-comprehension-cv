@@ -6,7 +6,6 @@ from tensorflow.keras.layers import GlobalAveragePooling2D, Dropout, Dense, Batc
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras import regularizers
 from tensorflow.keras.optimizers import Adam
-import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, confusion_matrix
@@ -14,8 +13,8 @@ import seaborn as sns
 import os
 
 # ---- CẤU HÌNH ----
-IMG_SIZE = (128, 128)
-BATCH_SIZE = 64
+IMG_SIZE = (96, 96)
+BATCH_SIZE = 32
 EPOCHS = 50
 train_path = 'data/train'
 test_path = 'data/test'
@@ -73,18 +72,17 @@ reduce_lr = ReduceLROnPlateau(
     min_lr=1e-5  # Minimum learning rate
 )
 
-
 # ---- KIẾN TRÚC MÔ HÌNH ----
-def build_mobilenetv2(input_shape=(128, 128, 3), num_classes=7):
-            # === Đây là phần backbone đã tích hợp sẵn Inverted Residuals và Linear Bottlenecks ===
+def build_mobilenetv2(input_shape=(96, 96, 3), num_classes=7):
+    # === Đây là phần backbone đã tích hợp sẵn Inverted Residuals và Linear Bottlenecks ===
     base_model = MobileNetV2(input_shape=input_shape, include_top=False, weights='imagenet')
-    # Freeze toàn bộ base_model (nếu chỉ huấn luyện classifier)
-    for layer in base_model.layers:
-        layer.trainable = False  # Đặt True nếu Khôi muốn fine-tune từ đầu luôn
+    # Chỉ fine-tune từ block_10_depthwise trở đi (tầng sâu hơn)
+    for layer in base_model.layers[:100]:
+        layer.trainable = False
 
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
-    x = Dropout(0.3)(x)
+    x = Dropout(0.25)(x)
     x = Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.001))(x)
     x = Dropout(0.5)(x)
     output = Dense(num_classes, activation='softmax')(x)
@@ -107,21 +105,16 @@ history = model.fit(
 )
 
 # --- Save model ---
-model.save('results/mobileNetV2_fer_final.h5')
+model.save('mobilenetv2.h5')
 
 # ---- ĐÁNH GIÁ MÔ HÌNH ----
 print("\n=== ĐÁNH GIÁ MÔ HÌNH TRÊN TẬP VALIDATION ===")
 
 # Tạo thư mục lưu kết quả
-os.makedirs('result_mobileV2Net', exist_ok=True)
+os.makedirs('result_mobilenetv2', exist_ok=True)
 
-# Tải lại mô hình tốt nhất (nếu có)
-if os.path.exists('result_mobileNetV2/best_model.h5'):
-    best_model = tf.keras.models.load_model('result_mobileNetV2/best_model.h5')
-    print("Sử dụng mô hình tốt nhất từ checkpoint: result_mobileNetV2/best_model.h5")
-else:
-    best_model = model
-    print("Không tìm thấy mô hình tốt nhất → dùng mô hình cuối cùng vừa huấn luyện")
+best_model = model
+print("Dùng mô hình cuối cùng vừa huấn luyện")
 
 # Reset generator và dự đoán
 val_gen.reset()
@@ -134,7 +127,7 @@ report = classification_report(y_true, y_pred_classes, target_names=CLASSES, dig
 print("Classification Report:\n", report)
 
 # Lưu report ra file
-with open('result_mobileNetV2/classification_report.txt', 'w') as f:
+with open('result_mobilenetv2/classification_report.txt', 'w') as f:
     f.write(report)
 
 # Confusion Matrix
@@ -151,7 +144,7 @@ plt.ylabel('True Labels', fontsize=12)
 plt.xticks(rotation=45)
 plt.yticks(rotation=0)
 plt.tight_layout()
-plt.savefig('result_mobileNetV2/confusion_matrix.png', dpi=300, bbox_inches='tight')
+plt.savefig('result_mobilenetv2/confusion_matrix.png', dpi=300, bbox_inches='tight')
 plt.close()
 
 # ---- VẼ TRAINING HISTORY ----
@@ -183,10 +176,10 @@ def plot_training_history(history):
     plt.legend()
 
     plt.tight_layout()
-    plt.savefig('result_mobileNetV2/training_history.png', dpi=300)
+    plt.savefig('result_mobilenetv2/training_history.png', dpi=300)
     plt.show()
 
 plot_training_history(history)
 
-print("Confusion matrix và báo cáo phân loại đã được lưu trong thư mục 'result_mobileNetV2/'.")
+print("Confusion matrix và báo cáo phân loại đã được lưu trong thư mục 'result_mobilenetv2/'.")
 
