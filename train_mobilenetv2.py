@@ -6,6 +6,7 @@ from tensorflow.keras.layers import GlobalAveragePooling2D, Dropout, Dense, Batc
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras import regularizers
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.losses import CategoricalCrossentropy
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, confusion_matrix
@@ -13,7 +14,7 @@ import seaborn as sns
 import os
 
 # ---- CẤU HÌNH ----
-IMG_SIZE = (96, 96)
+IMG_SIZE = (128, 128)
 BATCH_SIZE = 32
 EPOCHS = 50
 train_path = 'data/train'
@@ -75,22 +76,28 @@ reduce_lr = ReduceLROnPlateau(
 )
 
 # ---- KIẾN TRÚC MÔ HÌNH ----
-def build_mobilenetv2(input_shape=(96, 96, 3), num_classes=7):
+def build_mobilenetv2(input_shape=(128, 128, 3), num_classes=7):
     # === Đây là phần backbone đã tích hợp sẵn Inverted Residuals và Linear Bottlenecks ===
     base_model = MobileNetV2(input_shape=input_shape, include_top=False, weights='imagenet')
     # Chỉ fine-tune từ block_13_depthwise trở đi (tầng sâu hơn)
-    for layer in base_model.layers[:130]:
+    for layer in base_model.layers[:100]:
         layer.trainable = False
 
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
     x = Dropout(0.25)(x)
     x = Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.001))(x)
-    x = Dropout(0.3)(x)
+    x = BatchNormalization()(x)  # Thêm dòng này
+    x = Dropout(0.5)(x)
     output = Dense(num_classes, activation='softmax')(x)
 
     model = Model(inputs=base_model.input, outputs=output)
-    model.compile(optimizer=Adam(learning_rate=1e-4), loss='categorical_crossentropy', metrics=['accuracy'])
+#    model.compile(optimizer=Adam(learning_rate=1e-4), loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(
+        optimizer=Adam(learning_rate=1e-4),
+        loss=CategoricalCrossentropy(label_smoothing=0.1),
+        metrics=['accuracy']
+    )
     return model
 
 # --- Khởi tạo model ---

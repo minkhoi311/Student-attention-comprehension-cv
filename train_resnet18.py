@@ -107,8 +107,7 @@ def build_resnet18(input_shape=(48, 48, 1), num_classes=7):
     x = layers.ReLU()(x)
     x = layers.MaxPooling2D(pool_size=3, strides=2, padding='same')(x)
 
-    # ResNet Block: 32, 64, 128, 256 filters,khoi residual
-    for filters, stride in zip([32, 64, 128, 256], [1, 2, 2, 2]):
+    for filters, stride in zip([64, 128, 256, 512], [1, 2, 2, 2]):
         x = conv_block(x, filters, stride=stride)
         x = conv_block(x, filters, stride=1)
 
