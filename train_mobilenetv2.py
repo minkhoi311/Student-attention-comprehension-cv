@@ -42,7 +42,8 @@ train_gen = train_datagen.flow_from_directory(
     color_mode='rgb',
     classes=CLASSES,
     batch_size=BATCH_SIZE,
-    class_mode='categorical'
+    class_mode='categorical',
+    shuffle=True
 )
 
 val_gen = val_datagen.flow_from_directory(
@@ -51,7 +52,8 @@ val_gen = val_datagen.flow_from_directory(
     color_mode='rgb',
     classes=CLASSES,
     batch_size=BATCH_SIZE,
-    class_mode='categorical'
+    class_mode='categorical',
+    shuffle=False
 )
 
 # --- Class Weights ---
@@ -76,15 +78,15 @@ reduce_lr = ReduceLROnPlateau(
 def build_mobilenetv2(input_shape=(96, 96, 3), num_classes=7):
     # === Đây là phần backbone đã tích hợp sẵn Inverted Residuals và Linear Bottlenecks ===
     base_model = MobileNetV2(input_shape=input_shape, include_top=False, weights='imagenet')
-    # Chỉ fine-tune từ block_10_depthwise trở đi (tầng sâu hơn)
-    for layer in base_model.layers[:100]:
+    # Chỉ fine-tune từ block_13_depthwise trở đi (tầng sâu hơn)
+    for layer in base_model.layers[:130]:
         layer.trainable = False
 
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
     x = Dropout(0.25)(x)
     x = Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.001))(x)
-    x = Dropout(0.5)(x)
+    x = Dropout(0.3)(x)
     output = Dense(num_classes, activation='softmax')(x)
 
     model = Model(inputs=base_model.input, outputs=output)

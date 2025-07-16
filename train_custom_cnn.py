@@ -36,7 +36,7 @@ train_gen = train_datagen.flow_from_directory(train_path, target_size=IMG_SIZE, 
                                               classes=CLASSES, batch_size=BATCH_SIZE, class_mode='categorical')
 
 val_gen = val_datagen.flow_from_directory(test_path, target_size=IMG_SIZE, color_mode='grayscale',
-                                          classes=CLASSES, batch_size=BATCH_SIZE, class_mode='categorical')
+                                          classes=CLASSES, batch_size=BATCH_SIZE, class_mode='categorical', shuffle=False)
 
 # --- Class Weights ---
 class_weights = class_weight.compute_class_weight('balanced', classes=np.unique(train_gen.classes),

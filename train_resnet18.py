@@ -39,7 +39,8 @@ train_gen = train_datagen.flow_from_directory(
     color_mode='grayscale',
     classes=CLASSES,
     batch_size=BATCH_SIZE,
-    class_mode='categorical'
+    class_mode='categorical',
+    shuffle=True
 )
 
 val_gen = val_datagen.flow_from_directory(
@@ -48,7 +49,8 @@ val_gen = val_datagen.flow_from_directory(
     color_mode='grayscale',
     classes=CLASSES,
     batch_size=BATCH_SIZE,
-    class_mode='categorical'
+    class_mode='categorical',
+    shuffle=True
 )
 
 # --- Class Weights ---
@@ -70,8 +72,9 @@ reduce_lr = ReduceLROnPlateau(
 )
 
 # ---- RESNET18 BLOCK khối cơ bản trong resnet ----
-def conv_block(x, filters, kernel_size=3, stride=1):
+def conv_block(x, filters, kernel_size=3, stride=1, use_se=None):
     shortcut = x
+    #main path
     x = layers.Conv2D(filters, kernel_size, strides=stride, padding='same', kernel_initializer='he_normal')(x)
     x = layers.BatchNormalization()(x)
     x = layers.ReLU()(x)
@@ -79,6 +82,14 @@ def conv_block(x, filters, kernel_size=3, stride=1):
     x = layers.Conv2D(filters, kernel_size, strides=1, padding='same', kernel_initializer='he_normal')(x)
     x = layers.BatchNormalization()(x)
 
+    # Squeeze-and-Excitation block
+    if use_se:
+        se = layers.GlobalAveragePooling2D()(x)
+        se = layers.Dense(filters // 8, activation='relu')(se)
+        se = layers.Dense(filters, activation='sigmoid')(se)
+        x = layers.multiply([x, se])
+
+    #shortcut path
     if stride != 1 or shortcut.shape[-1] != filters:
         shortcut = layers.Conv2D(filters, 1, strides=stride, padding='same', kernel_initializer='he_normal')(shortcut)
         shortcut = layers.BatchNormalization()(shortcut)
@@ -89,7 +100,8 @@ def conv_block(x, filters, kernel_size=3, stride=1):
 
 # ---- BUILD RESNET18 ----
 def build_resnet18(input_shape=(48, 48, 1), num_classes=7):
-    inputs = layers.Input(shape=input_shape) #layer1
+    inputs = layers.Input(shape=input_shape)
+    #layer1, stemblock
     x = layers.Conv2D(32, kernel_size=5, strides=2, padding='same', kernel_initializer='he_normal')(inputs)  # nhẹ hơn 7x7
     x = layers.BatchNormalization()(x)
     x = layers.ReLU()(x)
@@ -100,10 +112,11 @@ def build_resnet18(input_shape=(48, 48, 1), num_classes=7):
         x = conv_block(x, filters, stride=stride)
         x = conv_block(x, filters, stride=1)
 
+    #head
     x = layers.GlobalAveragePooling2D()(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Dense(128, activation='relu', kernel_regularizer=regularizers.l2(0.001))(x)
-    x = layers.Dropout(0.3)(x)
+    x = layers.Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.001))(x)
+    x = layers.Dropout(0.5)(x)
     outputs = layers.Dense(num_classes, activation='softmax')(x)
 
     model = models.Model(inputs, outputs)
@@ -130,7 +143,7 @@ model.save('resnet18_fer.h5')
 print("\n=== ĐÁNH GIÁ MÔ HÌNH TRÊN TẬP VALIDATION ===")
 
 # Tạo thư mục lưu kết quả
-os.makedirs('result_resnet18', exist_ok=True)
+os.makedirs('result_resnetv18', exist_ok=True)
 
 best_model = model
 print("Dùng mô hình cuối cùng vừa huấn luyện")
