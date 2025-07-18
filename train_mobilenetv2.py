@@ -4,191 +4,149 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dropout, Dense, BatchNormalization
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
-from tensorflow.keras import regularizers
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.losses import CategoricalCrossentropy
-import numpy as np
+import tensorflow as tf
 import matplotlib.pyplot as plt
-from sklearn.metrics import classification_report, confusion_matrix
-import seaborn as sns
-import os
 
 # ---- CẤU HÌNH ----
-IMG_SIZE = (128, 128)
-BATCH_SIZE = 32
-EPOCHS = 50
+IMG_SIZE = (224, 224)
+BATCH_SIZE = 64
+EPOCHS = 30
 train_path = 'data/train'
 test_path = 'data/test'
 CLASSES = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
 
-# --- Data ---
 # Data Augmentation
-train_datagen = ImageDataGenerator(
-    rescale=1./255,  # Thêm rescale vào train luôn
-    rotation_range=15,
-    width_shift_range=0.1,
-    height_shift_range=0.1,
-    shear_range=0.1,
-    zoom_range=0.1,
-    horizontal_flip=True,
-    fill_mode='nearest'
-)
+train_datagen = ImageDataGenerator(rescale = 1./255,
+                                   validation_split = 0.2,
+                                    rotation_range=15,
+                                    width_shift_range=0.1,
+                                    height_shift_range=0.1,
+                                    shear_range=0.1,
+                                    zoom_range=0.1,
+                                    horizontal_flip=True,
+                                    fill_mode='nearest')
 
-val_datagen = ImageDataGenerator(rescale=1. / 255)
+valid_datagen = ImageDataGenerator(rescale = 1./255, validation_split = 0.2)
 
 # ---- TẠO DATA GENERATORS ----
-train_gen = train_datagen.flow_from_directory(
-    train_path,
-    target_size=IMG_SIZE,
-    color_mode='rgb',
-    classes=CLASSES,
-    batch_size=BATCH_SIZE,
-    class_mode='categorical',
-    shuffle=True
-)
+train_dataset  = train_datagen.flow_from_directory(directory = train_path,
+                                                   target_size = IMG_SIZE,
+                                                   class_mode = 'categorical',
+                                                   subset = 'training',
+                                                   batch_size = BATCH_SIZE,
+                                                   shuffle=True)
 
-val_gen = val_datagen.flow_from_directory(
-    test_path,
-    target_size=IMG_SIZE,
-    color_mode='rgb',
-    classes=CLASSES,
-    batch_size=BATCH_SIZE,
-    class_mode='categorical',
-    shuffle=False
-)
+valid_dataset = valid_datagen.flow_from_directory(directory = train_path,
+                                                  target_size = IMG_SIZE,
+                                                  class_mode = 'categorical',
+                                                  subset = 'validation',
+                                                  batch_size = BATCH_SIZE,
+                                                  shuffle=False)
 
 # --- Class Weights ---
-class_weights = class_weight.compute_class_weight('balanced', classes=np.unique(train_gen.classes),
-                                                  y=train_gen.classes)
-class_weights_dict = dict(enumerate(class_weights))
+# class_weights = class_weight.compute_class_weight(
+#     'balanced',
+#     classes=np.unique(train_gen.classes),
+#     y=train_gen.classes)
+#
+# class_weights_dict = dict(enumerate(class_weights))
 
-# --- Callbacks ---
-early_stopping = EarlyStopping(
-    monitor='val_loss',  # Monitor validation loss
-    patience=10,  # Number of epochs with no improvement after which training will be stopped
-    restore_best_weights=True  # Restore model weights from the epoch with the best value of the monitored quantity
-)
-reduce_lr = ReduceLROnPlateau(
-    monitor='val_loss',  # Monitor validation loss
-    factor=0.2,  # Factor by which the learning rate will be reduced
-    patience=5,  # Number of epochs with no improvement after which learning rate will be reduced
-    min_lr=1e-5  # Minimum learning rate
-)
+#loading basemode
+base_model = MobileNetV2(input_shape=(224,224,3), include_top=False, weights='imagenet')
 
+#fine-tuning
+for layer in base_model.layers[:100]:
+    layer.trainable = False
 # ---- KIẾN TRÚC MÔ HÌNH ----
-def build_mobilenetv2(input_shape=(128, 128, 3), num_classes=7):
-    # === Đây là phần backbone đã tích hợp sẵn Inverted Residuals và Linear Bottlenecks ===
-    base_model = MobileNetV2(input_shape=input_shape, include_top=False, weights='imagenet')
-    # Chỉ fine-tune từ block_13_depthwise trở đi (tầng sâu hơn)
-    for layer in base_model.layers[:100]:
-        layer.trainable = False
-
-    x = base_model.output
-    x = GlobalAveragePooling2D()(x)
-    x = Dropout(0.25)(x)
-    x = Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.001))(x)
-    x = BatchNormalization()(x)  # Thêm dòng này
-    x = Dropout(0.5)(x)
-    output = Dense(num_classes, activation='softmax')(x)
-
-    model = Model(inputs=base_model.input, outputs=output)
-#    model.compile(optimizer=Adam(learning_rate=1e-4), loss='categorical_crossentropy', metrics=['accuracy'])
-    model.compile(
-        optimizer=Adam(learning_rate=1e-4),
-        loss=CategoricalCrossentropy(label_smoothing=0.1),
-        metrics=['accuracy']
-    )
-    return model
+# Thêm các custom layers trên cùng
+x = base_model.output
+x = GlobalAveragePooling2D()(x)  # Thay thế Flatten bằng GlobalAveragePooling
+x = Dense(1028, activation='relu')(x)  # Thêm fully-connected layer
+x = Dropout(0.5)(x)  # Thêm Dropout để tránh overfitting
+output = Dense(len(CLASSES), activation='softmax')(x)  # Lớp output
 
 # --- Khởi tạo model ---
-model = build_mobilenetv2()
+model = Model(inputs=base_model.input, outputs=output)
 model.summary()
+#
+# #load anh model
+# plot_model(model,
+#            to_file='mobilenetv2_model.png',  # Fixed filename without double extension
+#            show_shapes=True,
+#            show_layer_names=True,
+#            dpi=96,
+#            rankdir='TB')  # Optional: 'TB' for vertical, 'LR' for horizontal layout
+# Image(filename='mobilenetv2_model.png')  # Match the filename above
 
-# --- Training ---
-history = model.fit(
-    train_gen,
-    validation_data=val_gen,
-    epochs=EPOCHS,
-    class_weight=class_weights_dict,
-    callbacks=[early_stopping, reduce_lr]
-)
+# Helper function
+METRICS = [
+      tf.keras.metrics.BinaryAccuracy(name='accuracy'),
+      tf.keras.metrics.Precision(name='precision'),
+      tf.keras.metrics.Recall(name='recall'),
+      tf.keras.metrics.AUC(name='auc')
+]
+#Callback
+lrd = ReduceLROnPlateau(monitor = 'val_loss',patience = 20,verbose = 1,factor = 0.50, min_lr = 1e-10)
+mcp = ModelCheckpoint('mobilenetv2_mymodel.h5')
+es = EarlyStopping(verbose=1, patience=20)
 
-# --- Save model ---
+# save
+model.compile(optimizer='Adam', loss='categorical_crossentropy',metrics=METRICS)
 model.save('mobilenetv2.h5')
 
+#run
+history=model.fit(train_dataset,validation_data=valid_dataset,epochs = EPOCHS,verbose = 1,callbacks=[lrd,mcp,es])
+
 # ---- ĐÁNH GIÁ MÔ HÌNH ----
-print("\n=== ĐÁNH GIÁ MÔ HÌNH TRÊN TẬP VALIDATION ===")
+## plotting Results
 
-# Tạo thư mục lưu kết quả
-os.makedirs('result_mobilenetv2', exist_ok=True)
+def Train_Val_Plot(acc, val_acc, loss, val_loss, auc, val_auc, precision, val_precision, f1, val_f1, save_path=None):
+    fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5, figsize=(20, 5))
+    fig.suptitle(" MODEL'S METRICS VISUALIZATION ")
 
-best_model = model
-print("Dùng mô hình cuối cùng vừa huấn luyện")
+    ax1.plot(range(1, len(acc) + 1), acc)
+    ax1.plot(range(1, len(val_acc) + 1), val_acc)
+    ax1.set_title('History of Accuracy')
+    ax1.set_xlabel('Epochs')
+    ax1.set_ylabel('Accuracy')
+    ax1.legend(['training', 'validation'])
 
-# Reset generator và dự đoán
-val_gen.reset()
-y_pred = best_model.predict(val_gen, verbose=1)
-y_true = val_gen.classes
-y_pred_classes = np.argmax(y_pred, axis=1)
+    ax2.plot(range(1, len(loss) + 1), loss)
+    ax2.plot(range(1, len(val_loss) + 1), val_loss)
+    ax2.set_title('History of Loss')
+    ax2.set_xlabel('Epochs')
+    ax2.set_ylabel('Loss')
+    ax2.legend(['training', 'validation'])
 
-# Classification Report
-report = classification_report(y_true, y_pred_classes, target_names=CLASSES, digits=4)
-print("Classification Report:\n", report)
+    ax3.plot(range(1, len(auc) + 1), auc)
+    ax3.plot(range(1, len(val_auc) + 1), val_auc)
+    ax3.set_title('History of AUC')
+    ax3.set_xlabel('Epochs')
+    ax3.set_ylabel('AUC')
+    ax3.legend(['training', 'validation'])
 
-# Lưu report ra file
-with open('result_mobilenetv2/classification_report.txt', 'w') as f:
-    f.write(report)
+    ax4.plot(range(1, len(precision) + 1), precision)
+    ax4.plot(range(1, len(val_precision) + 1), val_precision)
+    ax4.set_title('History of Precision')
+    ax4.set_xlabel('Epochs')
+    ax4.set_ylabel('Precision')
+    ax4.legend(['training', 'validation'])
 
-# Confusion Matrix
-cm = confusion_matrix(y_true, y_pred_classes)
-plt.figure(figsize=(10, 8))
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-            xticklabels=CLASSES,
-            yticklabels=CLASSES,
-            annot_kws={"size": 10})
+    ax5.plot(range(1, len(f1) + 1), f1)
+    ax5.plot(range(1, len(val_f1) + 1), val_f1)
+    ax5.set_title('History of F1-score')
+    ax5.set_xlabel('Epochs')
+    ax5.set_ylabel('F1 score')
+    ax5.legend(['training', 'validation'])
 
-plt.title('Confusion Matrix', fontsize=14)
-plt.xlabel('Predicted Labels', fontsize=12)
-plt.ylabel('True Labels', fontsize=12)
-plt.xticks(rotation=45)
-plt.yticks(rotation=0)
-plt.tight_layout()
-plt.savefig('result_mobilenetv2/confusion_matrix.png', dpi=300, bbox_inches='tight')
-plt.close()
-
-# ---- VẼ TRAINING HISTORY ----
-def plot_training_history(history):
-    acc = history.history['accuracy']
-    val_acc = history.history['val_accuracy']
-    loss = history.history['loss']
-    val_loss = history.history['val_loss']
-    epochs_range = range(1, len(acc) + 1)
-
-    plt.figure(figsize=(12, 5))
-
-    # Vẽ Accuracy
-    plt.subplot(1, 2, 1)
-    plt.plot(epochs_range, acc, label='Train Accuracy')
-    plt.plot(epochs_range, val_acc, label='Val Accuracy')
-    plt.title('Training and Validation Accuracy')
-    plt.xlabel('Epochs')
-    plt.ylabel('Accuracy')
-    plt.legend()
-
-    # Vẽ Loss
-    plt.subplot(1, 2, 2)
-    plt.plot(epochs_range, loss, label='Train Loss')
-    plt.plot(epochs_range, val_loss, label='Val Loss')
-    plt.title('Training and Validation Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.legend()
-
-    plt.tight_layout()
-    plt.savefig('result_mobilenetv2/training_history.png', dpi=300)
+    plt.savefig(save_path)
     plt.show()
 
-plot_training_history(history)
 
-print("Confusion matrix và báo cáo phân loại đã được lưu trong thư mục 'result_mobilenetv2/'.")
-
+Train_Val_Plot(history.history['accuracy'], history.history['val_accuracy'],
+               history.history['loss'], history.history['val_loss'],
+               history.history['auc'], history.history['val_auc'],
+               history.history['precision'], history.history['val_precision'],
+               history.history['f1_score'], history.history['val_f1_score'],
+               save_path='metrics_plot.png'
+               )

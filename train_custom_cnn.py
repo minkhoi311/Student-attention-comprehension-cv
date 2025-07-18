@@ -5,6 +5,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras import layers, regularizers
 from tensorflow.keras import models
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.losses import CategoricalCrossentropy
 from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -12,7 +13,7 @@ import os
 
 # --- Config ---
 IMG_SIZE = (48, 48)
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 EPOCHS = 50
 train_path = 'data/train'
 test_path = 'data/test'
@@ -32,15 +33,30 @@ train_datagen = ImageDataGenerator(
 )
 val_datagen = ImageDataGenerator(rescale=1./255)
 
-train_gen = train_datagen.flow_from_directory(train_path, target_size=IMG_SIZE, color_mode='grayscale',
-                                              classes=CLASSES, batch_size=BATCH_SIZE, class_mode='categorical')
+train_gen = train_datagen.flow_from_directory(
+    train_path,
+    target_size=IMG_SIZE,
+    color_mode='grayscale',
+    classes=CLASSES,
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    shuffle=True)
 
-val_gen = val_datagen.flow_from_directory(test_path, target_size=IMG_SIZE, color_mode='grayscale',
-                                          classes=CLASSES, batch_size=BATCH_SIZE, class_mode='categorical', shuffle=False)
+val_gen = val_datagen.flow_from_directory(
+    test_path,
+    target_size=IMG_SIZE,
+    color_mode='grayscale',
+    classes=CLASSES,
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    shuffle=False)
 
 # --- Class Weights ---
-class_weights = class_weight.compute_class_weight('balanced', classes=np.unique(train_gen.classes),
-                                                  y=train_gen.classes)
+class_weights = class_weight.compute_class_weight(
+    'balanced',
+    classes=np.unique(train_gen.classes),
+    y=train_gen.classes)
+
 class_weights_dict = dict(enumerate(class_weights))
 
 # --- Callbacks ---
@@ -65,31 +81,34 @@ def build_custom_cnn():
     model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
     model.add(layers.BatchNormalization())
     model.add(layers.MaxPooling2D((2, 2)))
-    model.add(layers.Dropout(0.25))  # Add dropout
+    model.add(layers.Dropout(0.3))  # Add dropout
     #tang 2
     model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
     model.add(layers.BatchNormalization())
     model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
     model.add(layers.BatchNormalization())
     model.add(layers.MaxPooling2D((2, 2)))
-    model.add(layers.Dropout(0.25))
+    model.add(layers.Dropout(0.3))
     #tang 3
     model.add(layers.Conv2D(128, (3, 3), activation='relu', padding='same'))
     model.add(layers.BatchNormalization())
     model.add(layers.Conv2D(128, (3, 3), activation='relu', padding='same'))
     model.add(layers.BatchNormalization())
     model.add(layers.MaxPooling2D((2, 2)))
-    model.add(layers.Dropout(0.25))
+    model.add(layers.Dropout(0.3))
     #tang 4
     model.add(layers.Flatten())
     model.add(layers.Dense(512, activation='relu', kernel_regularizer=regularizers.l2(0.001)))
     model.add(layers.Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.001)))
-#    model.add(layers.Dense(1024, activation='relu', kernel_regularizer=regularizers.l2(0.001)))
     model.add(layers.BatchNormalization())
     model.add(layers.Dropout(0.5))
     model.add(layers.Dense(7, activation='softmax'))
 
-    model.compile(optimizer=Adam(learning_rate=1e-3), loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(
+        optimizer=Adam(learning_rate=1e-4),
+        loss=CategoricalCrossentropy(label_smoothing=0.1),
+        metrics=['accuracy']
+    )
     return model
 
 # Khởi tạo model từ hàm build_custom_cnn
@@ -106,7 +125,7 @@ history = model.fit(
 )
 
 # --- Save Model ---
-model.save('custom_cnn_fer.h5')
+    model.save('custom_cnn_fer.h5')
 
 # ---- ĐÁNH GIÁ MÔ HÌNH ----
 print("\n=== ĐÁNH GIÁ MÔ HÌNH TRÊN TẬP VALIDATION ===")
