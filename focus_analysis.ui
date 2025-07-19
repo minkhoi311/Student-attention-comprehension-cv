@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1000</width>
+    <height>681</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Hệ thống theo dõi tập trung học tập</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="main_layout">
+    <item>
+     <layout class="QVBoxLayout" name="left_panel">
+      <item>
+       <widget class="QLabel" name="camera_label">
+        <property name="minimumSize">
+         <size>
+          <width>640</width>
+          <height>480</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">border: 2px solid #ccc; background-color: #eee;</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="stats_layout">
+        <item>
+         <widget class="QWidget" name="focus_gauge" native="true">
+          <property name="minimumSize">
+           <size>
+            <width>200</width>
+            <height>250</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QWidget" name="understanding_gauge" native="true">
+          <property name="minimumSize">
+           <size>
+            <width>200</width>
+            <height>250</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="emotion_group">
+          <property name="title">
+           <string>Trạng thái cảm xúc</string>
+          </property>
+          <layout class="QVBoxLayout" name="emotion_layout">
+           <item>
+            <widget class="QLabel" name="emotion_label">
+             <property name="font">
+              <font>
+               <family>Arial</family>
+               <pointsize>16</pointsize>
+               <bold>true</bold>
+               <weight>75</weight>
+              </font>
+             </property>
+             <property name="text">
+              <string>Đang nhận diện...</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="confidence_label">
+             <property name="text">
+              <string>Độ tin cậy: 0%</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="right_panel">
+      <item>
+       <layout class="QHBoxLayout" name="control_layout">
+        <item>
+         <widget class="QPushButton" name="start_btn">
+          <property name="styleSheet">
+           <string notr="true">background-color: #4CAF50; color: white; font-weight: bold;</string>
+          </property>
+          <property name="text">
+           <string>Bắt đầu theo dõi</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="stop_btn">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: #f44336; color: white; font-weight: bold;</string>
+          </property>
+          <property name="text">
+           <string>Dừng theo dõi</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="report_btn">
+          <property name="styleSheet">
+           <string notr="true">background-color: #2196F3; color: white; font-weight: bold;</string>
+          </property>
+          <property name="text">
+           <string>Xuất báo cáo</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QTabWidget" name="tab_widget">
+        <property name="currentIndex">
+         <number>0</number>
+        </property>
+        <widget class="QWidget" name="focus_tab">
+         <attribute name="title">
+          <string>Trạng thái</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="focus_tab_layout">
+          <item>
+           <widget class="QLabel" name="time_label">
+            <property name="font">
+             <font>
+              <family>Arial</family>
+              <pointsize>14</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Thời gian: 00:00</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+             </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="warning_label">
+            <property name="font">
+             <font>
+              <family>Arial</family>
+              <pointsize>12</pointsize>
+              <bold>true</bold>
+              <weight>75</weight>
+             </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: #f44336;</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="status_label">
+            <property name="font">
+             <font>
+              <family>Arial</family>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Sẵn sàng bắt đầu theo dõi</string>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: #4CAF50; font-weight: bold;</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
