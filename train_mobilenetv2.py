@@ -6,6 +6,7 @@ from tensorflow.keras.layers import GlobalAveragePooling2D, Dropout, Dense, Batc
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from tensorflow.keras import backend as K
 
 # ---- CẤU HÌNH ----
 IMG_SIZE = (224, 224)
@@ -43,14 +44,6 @@ valid_dataset = valid_datagen.flow_from_directory(directory = train_path,
                                                   batch_size = BATCH_SIZE,
                                                   shuffle=False)
 
-# --- Class Weights ---
-# class_weights = class_weight.compute_class_weight(
-#     'balanced',
-#     classes=np.unique(train_gen.classes),
-#     y=train_gen.classes)
-#
-# class_weights_dict = dict(enumerate(class_weights))
-
 #loading basemode
 base_model = MobileNetV2(input_shape=(224,224,3), include_top=False, weights='imagenet')
 
@@ -68,7 +61,8 @@ output = Dense(len(CLASSES), activation='softmax')(x)  # Lớp output
 # --- Khởi tạo model ---
 model = Model(inputs=base_model.input, outputs=output)
 model.summary()
-#
+
+
 # #load anh model
 # plot_model(model,
 #            to_file='mobilenetv2_model.png',  # Fixed filename without double extension
@@ -78,12 +72,23 @@ model.summary()
 #            rankdir='TB')  # Optional: 'TB' for vertical, 'LR' for horizontal layout
 # Image(filename='mobilenetv2_model.png')  # Match the filename above
 
+
 # Helper function
+def f1_score(y_true, y_pred): #taken from old keras source code
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + K.epsilon())
+    recall = true_positives / (possible_positives + K.epsilon())
+    f1_val = 2*(precision*recall)/(precision+recall+K.epsilon())
+    return f1_val
+
 METRICS = [
       tf.keras.metrics.BinaryAccuracy(name='accuracy'),
       tf.keras.metrics.Precision(name='precision'),
       tf.keras.metrics.Recall(name='recall'),
-      tf.keras.metrics.AUC(name='auc')
+      tf.keras.metrics.AUC(name='auc'),
+        f1_score,
 ]
 #Callback
 lrd = ReduceLROnPlateau(monitor = 'val_loss',patience = 20,verbose = 1,factor = 0.50, min_lr = 1e-10)

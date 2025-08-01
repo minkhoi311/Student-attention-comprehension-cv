@@ -11,7 +11,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from UI import Ui_MainWindow
 
 # --- Load emotion model ---
-model = load_model('model_file.h5')
+model = load_model('custom_cnn_fer.h5')
 labels_dict = {0: 'Angry', 1: 'Disgust', 2: 'Fear', 3: 'Happy', 4: 'Neutral', 5: 'Sad', 6: 'Surprise'}
 
 # --- Initialize MediaPipe ---

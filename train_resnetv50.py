@@ -1,10 +1,14 @@
+import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sn
+import skimage.io
 import tensorflow as tf
-from keras.src.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications import ResNet50
-from tensorflow.keras.layers import Dense, Input, Dropout, GlobalAveragePooling2D, Flatten, Conv2D, BatchNormalization, Activation, MaxPooling2D
+from tensorflow.keras.layers import Dense, Flatten, Dropout,BatchNormalization ,Activation
 from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping
 
 # === CẤU HÌNH CƠ BẢN ===
 IMG_SIZE = (224, 224)
