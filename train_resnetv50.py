@@ -1,14 +1,12 @@
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sn
-import skimage.io
 import tensorflow as tf
+from keras.src.layers import Conv2D
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications import ResNet50
 from tensorflow.keras.layers import Dense, Flatten, Dropout,BatchNormalization ,Activation
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping
+from tensorflow.keras import backend as K
 
 # === CẤU HÌNH CƠ BẢN ===
 IMG_SIZE = (224, 224)
@@ -46,16 +44,9 @@ valid_dataset = valid_datagen.flow_from_directory(directory = train_path,
                                                   batch_size = BATCH_SIZE,
                                                   shuffle=False)
 
-# # === CLASS WEIGHTS ===
-# class_weights = class_weight.compute_class_weight(
-#     class_weight='balanced',
-#     classes=np.unique(train_gen.classes),
-#     y=train_gen.classes
-# )
-# class_weights_dict = dict(enumerate(class_weights))
-
 #Loading Base Model
 base_model = tf.keras.applications.ResNet50(input_shape=(224,224,3),include_top=False,weights='imagenet')
+
 #Fine-tunning
 for layer in base_model.layers[:-100]:
     layer.trainable=False
@@ -64,7 +55,6 @@ for layer in base_model.layers[:-100]:
 model = Sequential()
 
 # 1 - Convolution
-# extract relevant features from the images
 model.add(base_model) #adding base model of ResNet50
 model.add(BatchNormalization())
 model.add(Activation('relu'))
@@ -92,7 +82,6 @@ model.add(Dropout(0.25))
 model.add(Flatten())
 
 # Fully connected layer 1st layer
-# using these features to classify
 model.add(Dense(256))
 model.add(BatchNormalization())
 model.add(Activation('relu'))
@@ -107,32 +96,37 @@ model.add(Dropout(0.25))
 model.add(Dense(len(CLASSES), activation='softmax'))
 
 model.summary()
-#load anh model
-# from tensorflow.keras.utils import plot_model
-# from IPython.display import Image
-# plot_model(model, to_file='mymodel2.png', show_shapes=True,show_layer_names=True)
-# Image(filename='mymodel2.png')
 
 # Helper function
+def f1_score(y_true, y_pred): #taken from old keras source code
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + K.epsilon())
+    recall = true_positives / (possible_positives + K.epsilon())
+    f1_val = 2*(precision*recall)/(precision+recall+K.epsilon())
+    return f1_val
+
 METRICS = [
     tf.keras.metrics.BinaryAccuracy(name='accuracy'),
     tf.keras.metrics.Precision(name='precision'),
     tf.keras.metrics.Recall(name='recall'),
-    tf.keras.metrics.AUC(name='auc')
+    tf.keras.metrics.AUC(name='auc'),
+    f1_score
 ]
+
 #CALL back
 lrd = ReduceLROnPlateau(monitor = 'val_loss',patience = 20,verbose = 1,factor = 0.50, min_lr = 1e-10)
 mcp = ModelCheckpoint('resnet50_mymodel.h5')
 es = EarlyStopping(verbose=1, patience=20)
+
 #save
 model.compile(optimizer='Adam', loss='categorical_crossentropy',metrics=METRICS)
-model.save('resnet50.h5')
+
 #run
 history=model.fit(train_dataset,validation_data=valid_dataset,epochs = 30,verbose = 1,callbacks=[lrd,mcp,es])
 
 # ---- ĐÁNH GIÁ MÔ HÌNH ----
-## plotting Results
-
 def Train_Val_Plot(acc, val_acc, loss, val_loss, auc, val_auc, precision, val_precision, f1, val_f1, save_path=None):
     fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5, figsize=(20, 5))
     fig.suptitle(" MODEL'S METRICS VISUALIZATION ")

@@ -135,20 +135,12 @@ model.compile(optimizer='Adam', loss='categorical_crossentropy',metrics=METRICS)
 #
 model.summary()
 
-#Hien anh
-# from tensorflow.keras.utils import plot_model
-# from IPython.display import Image
-# plot_model(model, to_file='mymodel2.png', show_shapes=True,show_layer_names=True)
-# Image(filename='mymodel2.png')
-
 #run
 history=model.fit(train_dataset,validation_data=valid_dataset,epochs = EPOCHS,verbose = 1,callbacks=[lrd,mcp,es])
 #save
 model.save('custom_cnn.h5')
 
 # ---- ĐÁNH GIÁ MÔ HÌNH ----
-## plotting Results
-
 def Train_Val_Plot(acc, val_acc, loss, val_loss, auc, val_auc, precision, val_precision, f1, val_f1, save_path=None):
     fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5, figsize=(20, 5))
     fig.suptitle(" MODEL'S METRICS VISUALIZATION ")

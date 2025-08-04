@@ -14,6 +14,7 @@ from PyQt5.QtGui import QPainter, QColor, QConicalGradient, QFont
 from PyQt5.QtCore import Qt
 
 
+#giao diện vẽ vòng tròn
 class CircularGauge(QWidget):
     def __init__(self, parent=None, title="", min_val=0, max_val=100):
         super().__init__(parent)
@@ -81,7 +82,7 @@ class CircularGauge(QWidget):
         painter.drawText(x, y + size + 10, f"{self.min_val}")
         painter.drawText(x + size - 15, y + size + 10, f"{self.max_val}")
 
-
+#giao diện của phần mềm
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")

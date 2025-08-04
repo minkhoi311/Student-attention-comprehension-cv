@@ -53,25 +53,14 @@ for layer in base_model.layers[:100]:
 # ---- KIẾN TRÚC MÔ HÌNH ----
 # Thêm các custom layers trên cùng
 x = base_model.output
-x = GlobalAveragePooling2D()(x)  # Thay thế Flatten bằng GlobalAveragePooling
-x = Dense(1028, activation='relu')(x)  # Thêm fully-connected layer
-x = Dropout(0.5)(x)  # Thêm Dropout để tránh overfitting
-output = Dense(len(CLASSES), activation='softmax')(x)  # Lớp output
+x = GlobalAveragePooling2D()(x)
+x = Dense(1028, activation='relu')(x)
+x = Dropout(0.5)(x)
+output = Dense(len(CLASSES), activation='softmax')(x)
 
 # --- Khởi tạo model ---
 model = Model(inputs=base_model.input, outputs=output)
 model.summary()
-
-
-# #load anh model
-# plot_model(model,
-#            to_file='mobilenetv2_model.png',  # Fixed filename without double extension
-#            show_shapes=True,
-#            show_layer_names=True,
-#            dpi=96,
-#            rankdir='TB')  # Optional: 'TB' for vertical, 'LR' for horizontal layout
-# Image(filename='mobilenetv2_model.png')  # Match the filename above
-
 
 # Helper function
 def f1_score(y_true, y_pred): #taken from old keras source code
@@ -103,8 +92,6 @@ model.save('mobilenetv2.h5')
 history=model.fit(train_dataset,validation_data=valid_dataset,epochs = EPOCHS,verbose = 1,callbacks=[lrd,mcp,es])
 
 # ---- ĐÁNH GIÁ MÔ HÌNH ----
-## plotting Results
-
 def Train_Val_Plot(acc, val_acc, loss, val_loss, auc, val_auc, precision, val_precision, f1, val_f1, save_path=None):
     fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5, figsize=(20, 5))
     fig.suptitle(" MODEL'S METRICS VISUALIZATION ")
