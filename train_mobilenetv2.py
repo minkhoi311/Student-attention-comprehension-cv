@@ -56,7 +56,7 @@ x = base_model.output
 x = GlobalAveragePooling2D()(x)
 x = Dense(1028, activation='relu')(x)
 x = Dropout(0.5)(x)
-output = Dense(len(CLASSES), activation='softmax')(x)
+output = Dense(7, activation='softmax')(x)
 
 # --- Khởi tạo model ---
 model = Model(inputs=base_model.input, outputs=output)
@@ -86,7 +86,6 @@ es = EarlyStopping(verbose=1, patience=20)
 
 # save
 model.compile(optimizer='Adam', loss='categorical_crossentropy',metrics=METRICS)
-model.save('mobilenetv2.h5')
 
 #run
 history=model.fit(train_dataset,validation_data=valid_dataset,epochs = EPOCHS,verbose = 1,callbacks=[lrd,mcp,es])
